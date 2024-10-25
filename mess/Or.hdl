@@ -1,0 +1,22 @@
+// Nand only
+
+// CHIP Or {
+//     IN a, b;
+//     OUT out;
+
+//     PARTS:
+//     Nand(a=a, b=a, out=outa);
+//     Nand(a=b, b=b, out=outb);
+//     Nand(a=outa, b=outb, out=out);
+// }
+
+
+CHIP Or {
+    IN a, b;
+    OUT out;
+
+    PARTS:
+    Not(in=a, out=outa);
+    Not(in=b, out=outb);
+    Nand(a=outa, b=outb, out=out);
+}
