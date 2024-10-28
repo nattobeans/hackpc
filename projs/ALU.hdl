@@ -1,0 +1,47 @@
+CHIP ALU {
+    IN  
+        x[16], y[16],  // 16-bit inputs        
+        zx, // zero the x input?
+        nx, // negate the x input?
+        zy, // zero the y input?
+        ny, // negate the y input?
+        f,  // compute (out = x + y) or (out = x & y)?
+        no; // negate the out output?
+    OUT 
+        out[16], // 16-bit output
+        zr,      // if (out == 0) equals 1, else 0
+        ng;      // if (out < 0)  equals 1, else 0
+
+    PARTS:
+    Mux16(a=x, b=false, sel=zx, out=zeroX);
+    Mux16(a=y, b=false, sel=zy, out=zeroY);
+
+    Xor16(a=zeroX, b=true, out=tmpX);
+    Xor16(a=zeroY, b=true, out=tmpY);
+    Mux16(a=zeroX, b=tmpX, sel=nx, out=negX);
+    Mux16(a=zeroY, b=tmpY, sel=ny, out=negY);
+
+    Add16(a=negX, b=negY, out=XaddY);
+    And16(a=negX, b=negY, out=XandY);
+    Mux16(a=XandY, b=XaddY, sel=f, out=Fxy);
+
+    Xor16(a=Fxy, b=true, out=XorFxy);
+    Mux16(a=Fxy, b=XorFxy, sel=no, out=out, out[15]=ng, out[0]=out0, out[1]=out1, out[2]=out2, out[3]=out3, out[4]=out4, out[5]=out5, out[6]=out6, out[7]=out7, out[8]=out8, out[9]=out9, out[10]=out10, out[11]=out11, out[12]=out12, out[13]=out13, out[14]=out14, out[15]=out15);
+
+    // Didn't have access to a Or16way 
+    Or(a=out0, b=out1, out=zr1);
+    Or(a=zr1, b=out2, out=zr2);
+    Or(a=zr2, b=out3, out=zr3);
+    Or(a=zr3, b=out4, out=zr4);
+    Or(a=zr4, b=out5, out=zr5);
+    Or(a=zr5, b=out6, out=zr6);
+    Or(a=zr6, b=out7, out=zr7);
+    Or(a=zr7, b=out8, out=zr8);
+    Or(a=zr8, b=out9, out=zr9);
+    Or(a=zr9, b=out10, out=zr10);
+    Or(a=zr10, b=out11, out=zr11);
+    Or(a=zr11, b=out12, out=zr12);
+    Or(a=zr12, b=out13, out=zr13);
+    Or(a=zr13, b=out14, out=zr14);
+    Or(a=zr14, b=out15, out=zr);
+}
