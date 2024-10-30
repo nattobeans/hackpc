@@ -1,3 +1,8 @@
+// Load0 = 00
+// Load1 = 01
+// Load2 = 10
+// Load3 = 11
+
 CHIP RAM16K {
     IN in[16], load, address[14];
     OUT out[16];

@@ -1,0 +1,66 @@
+CHIP CPU {
+
+    IN  inM[16],         // M value input  (M = contents of RAM[A])
+        instruction[16], // Instruction for execution
+        reset;           // Signals whether to re-start the current
+                         // program (reset==1) or continue executing
+                         // the current program (reset==0).
+
+    OUT outM[16],        // M value output
+        writeM,          // Write to M? 
+        addressM[15],    // Address in data memory (of M)
+        pc[15];          // address of next instruction
+
+    PARTS:
+    // Parse C instruction or set C instruction to Null
+    Mux16(a=false, b=instruction, sel=instruction[15],
+    out[12] = aBit, 
+    out[11]=c1, out[10]=c2, out[9]=c3, 
+    out[8]=c4, out[7]=c5, out[6]=c6, 
+    out[5] = ad1, out[4] = dd2, out[3] = md3,   
+    out[2] = j1, out[1] = j2, out[0] = j3);
+
+
+    // Decide if Aregister is to be loaded
+    Not(in=instruction[15], out=aInstruction);
+    Or(a=aInstruction, b=ad1, out=loadAreg);
+    // Input Aregister with either instruction or ALU output
+    Mux16(a=instruction, b=aluOutput, sel=instruction[15], out=aRegInput);
+    // Set Aregister
+    ARegister(in=aRegInput, load=loadAreg, out=aRegOut, out[0..14]=addressM);
+    // Decide if Aregister or incoming memory is to be loaded
+    Mux16(a=aRegOut, b=inM, sel=aBit, out=yInput);
+
+    // Dregister - decide to load if d destination is setis set
+    DRegister(in=aluOutput, load=dd2, out=xInput);
+
+    ALU(x=xInput, y=yInput, zx=c1, nx=c2, zy=c3, ny=c4, f=c5, 
+    no=c6, out=aluOutput, out=outM, zr=zeroOutput, ng=negOutput);
+
+    // Decide whether to set write m
+    And(a=true, b=md3, out=writeM);
+    
+    // not zero and neg output to see if output is above 0
+    Not(in=zeroOutput, out=notZero);
+    Not(in=negOutput, out=notNeg);
+    And(a=notZero, b=notNeg, out=aboveZero);
+
+    // Less than bit <j1, 100> = 1, output is neg then jmp
+    And(a=j1, b=negOutput, out=jlt);
+    // Equal bit <j2, 010> = 1, output is zero so jmp
+    And(a=j2, b=zeroOutput, out=jeq);
+    // Greater than bit <j3, 001> is 1, output s above 0 so jmp
+    And(a=j3, b=aboveZero, out=jgt);
+    // All three bits are <j1 j2 j3, 111>, so JMP
+    And(a=j1, b=j2, out = j1j2);
+    And(a=j1j2, b=j3, out = jmp);
+
+    // if any jmp bit is 1 load PC with AReg output otherWise inc
+    Or(a=jgt, b=jeq, out=jge);
+    Or(a=jge, b=jlt, out=jgl);
+    Or(a=jmp, b=jgl, out=loadNewAddr);
+
+    Xor(a=loadNewAddr, b=true, out=increment);
+    PC(in=aRegOut, load=loadNewAddr, inc=increment, reset=reset, out[0..14]=pc);
+    
+}
